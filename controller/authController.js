@@ -64,7 +64,7 @@ const userController = {
       if (!passwordCheck)
         return next(CustomErrorHandler.wrongCredentials("Incorrect Password"));
       const accessToken = await generateToken(existUser._id);
-      existUser.status="online";
+      existUser.status = "online";
       await existUser.save();
       return res.status(200).json({
         success: true,
@@ -82,13 +82,9 @@ const userController = {
     }
   },
   async logout(req, res, next) {
-    const id = req.user.id;
+    // const id = req.user.id;
     try {
-      const user = await User.findByIdAndUpdate(
-        id,
-        { status: "offline" },
-        { new: true }
-      );
+      // await User.findByIdAndUpdate(id, { status: "offline" }, { new: true });
       return res.status(200).json({
         success: true,
         msg: "Loggout Successfull",
