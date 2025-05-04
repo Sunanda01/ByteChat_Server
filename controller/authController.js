@@ -22,7 +22,6 @@ const userController = {
         name,
         email,
         password: hashPassword,
-        status: "online",
       });
       const accessToken = jwt.sign(
         {
@@ -42,8 +41,7 @@ const userController = {
           id: newUser._id,
           name,
           email,
-          password: newUser.password,
-          status: newUser.status,
+          newMessages: newUser.newMessages,
         },
       });
     } catch (err) {
@@ -71,23 +69,11 @@ const userController = {
         msg: "Welcome Back",
         accessToken: accessToken,
         user: {
-          id: existUser.id,
+          id: existUser._id,
           name: existUser.name,
           email,
-          status: existUser.status,
+          newMessages: existUser.newMessages,
         },
-      });
-    } catch (err) {
-      return next(err);
-    }
-  },
-  async logout(req, res, next) {
-    // const id = req.user.id;
-    try {
-      // await User.findByIdAndUpdate(id, { status: "offline" }, { new: true });
-      return res.status(200).json({
-        success: true,
-        msg: "Loggout Successfull",
       });
     } catch (err) {
       return next(err);

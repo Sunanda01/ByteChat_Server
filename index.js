@@ -8,6 +8,11 @@ const errorHandler = require("./middleware/errorHandler");
 const http = require("http");
 const { Server } = require("socket.io");
 const User = require("./models/userModel");
+const {
+  getLastMessagesFromRoom,
+  sortRoomMessagesByDate,
+} = require("./controller/messageController");
+const Message = require("./models/messageModel");
 const FRONTEND_URL = require("./config/config").FRONTEND_URL;
 const rooms = ["general", "tech", "finance", "crypto"];
 const app = express();
@@ -26,13 +31,60 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log(`User Connected with SocketId ${socket.id}`);
   socket.on("newUser", async () => {
-    const member = await User.find();
-    io.emit("newUser", member);
+    const members = await User.find();
+    io.emit("newUser", members);
   });
 
-  socket.on("disconnect",()=>{
-    console.log(`User Disconnected with SocketId ${socket.id}`)
-  })
+  socket.on("join-room", async (newRoom, oldRoom) => {
+    socket.join(newRoom);
+    socket.leave(oldRoom);
+    let roomMessages = await getLastMessagesFromRoom(newRoom);
+    roomMessages = sortRoomMessagesByDate(roomMessages);
+    socket.emit("room-messages", roomMessages);
+    console.log(newRoom, roomMessages);
+  });
+
+  socket.on("message-room", async (room, content, sender, time, date) => {
+    console.log("Message: ", content);
+    const newMessage = await Message.create({
+      to: room,
+      content,
+      from: sender,
+      time,
+      date,
+    });
+    let roomMessages = await getLastMessagesFromRoom(room);
+    roomMessages = sortRoomMessagesByDate(roomMessages);
+    io.to(room).emit("room-messages", roomMessages);
+    console.log(room, roomMessages);
+    socket.broadcast.emit("notifications", room);
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`User Disconnected with SocketId ${socket.id}`);
+  });
+
+  app.post("/auth/logout", async (req, res) => {
+    console.log(req.body);
+    const { id, newMessages } = req.body;
+    try {
+      const user = await User.findById(id);
+      user.status = "offline";
+      user.newMessages = newMessages;
+      await user.save();
+      const members = await User.find();
+      io.emit("newUser", members);
+      return res.status(200).json({
+        success: true,
+        msg: "Loggout Successfull",
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        msg: "Failed to Loggout",
+      });
+    }
+  });
 });
 
 app.use("/auth", authRoutes);
