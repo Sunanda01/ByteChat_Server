@@ -4,8 +4,8 @@ const connection = async () => {
   try {
     await mongoose.connect(DB_URL);
     console.log("Database Connected successfully");
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    return next(err);
   }
 };
 module.exports = connection;

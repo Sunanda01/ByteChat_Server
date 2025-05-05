@@ -29,7 +29,7 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log(`User Connected with SocketId ${socket.id}`);
+  // console.log(`User Connected with SocketId ${socket.id}`);
   socket.on("newUser", async () => {
     const members = await User.find();
     io.emit("newUser", members);
@@ -41,11 +41,9 @@ io.on("connection", (socket) => {
     let roomMessages = await getLastMessagesFromRoom(newRoom);
     roomMessages = sortRoomMessagesByDate(roomMessages);
     socket.emit("room-messages", roomMessages);
-    console.log(newRoom, roomMessages);
   });
 
   socket.on("message-room", async (room, content, sender, time, date) => {
-    console.log("Message: ", content);
     const newMessage = await Message.create({
       to: room,
       content,
@@ -56,16 +54,14 @@ io.on("connection", (socket) => {
     let roomMessages = await getLastMessagesFromRoom(room);
     roomMessages = sortRoomMessagesByDate(roomMessages);
     io.to(room).emit("room-messages", roomMessages);
-    console.log(room, roomMessages);
     socket.broadcast.emit("notifications", room);
   });
 
   socket.on("disconnect", () => {
-    console.log(`User Disconnected with SocketId ${socket.id}`);
+    // console.log(`User Disconnected with SocketId ${socket.id}`);
   });
 
   app.post("/auth/logout", async (req, res) => {
-    console.log(req.body);
     const { id, newMessages } = req.body;
     try {
       const user = await User.findById(id);

@@ -1,15 +1,11 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/userModel");
 const CustomErrorHandler = require("../services/customErrorHandler");
-const jwt = require("jsonwebtoken");
-const { generateToken } = require("../middleware/authToken");
-const JWTHASHVALUE = require("../config/config").JWTHASHVALUE;
-const JWTEXPIRY = require("../config/config").JWTEXPIRY;
 const userController = {
   async register(req, res, next) {
     const { name, email, password, picture } = req.body;
     try {
-      if (!name || !email || !password)
+      if (!name || !email || !password || !picture)
         return res
           .status(400)
           .json({ success: false, msg: "All fields are required" });
@@ -22,25 +18,17 @@ const userController = {
         name,
         email,
         password: hashPassword,
+        picture,
       });
-      const accessToken = jwt.sign(
-        {
-          id: newUser._id,
-          email: newUser.email,
-          status: newUser.status,
-        },
-        JWTHASHVALUE,
-        { expiresIn: JWTEXPIRY }
-      );
       await newUser.save();
       return res.status(200).json({
         success: true,
         msg: "User Created Successfully",
-        accessToken: accessToken,
         user: {
           id: newUser._id,
           name,
           email,
+          picture,
           newMessages: newUser.newMessages,
         },
       });
@@ -61,17 +49,16 @@ const userController = {
       const passwordCheck = bcrypt.compareSync(password, existUser.password);
       if (!passwordCheck)
         return next(CustomErrorHandler.wrongCredentials("Incorrect Password"));
-      const accessToken = await generateToken(existUser._id);
       existUser.status = "online";
       await existUser.save();
       return res.status(200).json({
         success: true,
         msg: "Welcome Back",
-        accessToken: accessToken,
         user: {
           id: existUser._id,
           name: existUser.name,
           email,
+          picture: existUser.picture,
           newMessages: existUser.newMessages,
         },
       });
